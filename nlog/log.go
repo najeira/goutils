@@ -43,16 +43,24 @@ var logNameLevel = map[string]int{
 	"DEBUG":    LogLevelDebug,
 }
 
-type Logger struct {
+type Logger interface {
+	SetLevel(level int)
+	Printf(level int, format string, v ...interface{})
+	Flush()
+}
+
+type bufLogger struct {
 	level  int
 	logger *log.Logger
 	buf    *bufio.Writer
 	mu     sync.Mutex
 }
 
-func NewLogger(out io.Writer, level int, prefix string, flg int) *Logger {
+var _ Logger = (*bufLogger)(nil)
+
+func NewLogger(out io.Writer, level int, prefix string, flg int) Logger {
 	buf := bufio.NewWriter(out)
-	return &Logger{
+	return &bufLogger{
 		level:  level,
 		buf:    buf,
 		logger: log.New(buf, prefix, flg),
@@ -67,11 +75,11 @@ func GetLogLevelByName(name string) int {
 	return LogLevelNo
 }
 
-func (l *Logger) SetLevel(level int) {
+func (l *bufLogger) SetLevel(level int) {
 	l.level = level
 }
 
-func (l *Logger) Printf(level int, format string, v ...interface{}) {
+func (l *bufLogger) Printf(level int, format string, v ...interface{}) {
 	if level > l.level {
 		return
 	}
@@ -84,7 +92,7 @@ func (l *Logger) Printf(level int, format string, v ...interface{}) {
 	}
 }
 
-func (l *Logger) Flush() {
+func (l *bufLogger) Flush() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.buf.Flush()
