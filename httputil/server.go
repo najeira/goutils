@@ -39,6 +39,15 @@ func ListenFDAndServe(fd uint, handler http.Handler) error {
 	return Serve(ln, handler)
 }
 
+func ListenUnixAndServe(addr string, handler http.Handler) error {
+	ln, err := Listen("unix", addr)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(addr)
+	return Serve(ln, handler)
+}
+
 func Serve(ln net.Listener, handler http.Handler) error {
 	srv := &Server{}
 	return srv.Serve(ln, handler)
@@ -46,11 +55,19 @@ func Serve(ln net.Listener, handler http.Handler) error {
 
 func (srv *Server) Serve(ln net.Listener, handler http.Handler) error {
 	addr := ln.Addr().String()
-	kaln := tcpKeepAliveListener{ln.(*net.TCPListener)}
+
+	var srvLn net.Listener
+	tcLn, ok := ln.(*net.TCPListener)
+	if ok {
+		srvLn = tcpKeepAliveListener{tcLn}
+	} else {
+		srvLn = ln
+	}
+
 	httpSrv := &http.Server{Addr: addr, Handler: handler}
 	srv.Server = httpSrv
-	srv.signalHandler(kaln)
-	return httpSrv.Serve(kaln)
+	srv.signalHandler(srvLn)
+	return httpSrv.Serve(srvLn)
 }
 
 func (srv *Server) signalHandler(ln net.Listener) {
