@@ -1,99 +1,113 @@
 package nlog
 
 import (
-	"log"
-	"bufio"
-	"sync"
-	"io"
 	"fmt"
-	"strings"
+	"io"
+	"log"
 )
 
 const (
-	LogLevelNo = iota
-	LogLevelCritical
-	LogLevelError
-	LogLevelWarn
-	LogLevelInfo
-	LogLevelDebug
+	No = iota
+	Critical
+	Error
+	Warn
+	Info
+	Debug
+	Verbose
 )
 
 const (
-	Ldate = log.Ldate
-	Ltime = log.Ltime
+	Ldate         = log.Ldate
+	Ltime         = log.Ltime
 	Lmicroseconds = log.Lmicroseconds
-	Llongfile = log.Llongfile
-	Lshortfile = log.Lshortfile
-	LstdFlags = log.LstdFlags
+	Llongfile     = log.Llongfile
+	Lshortfile    = log.Lshortfile
+	LstdFlags     = log.LstdFlags
 )
 
-var logLevelName = map[int]string{
-	LogLevelCritical: "CRITICAL",
-	LogLevelError:    "ERROR",
-	LogLevelWarn:     "WARN",
-	LogLevelInfo:     "INFO",
-	LogLevelDebug:    "DEBUG",
-}
-
-var logNameLevel = map[string]int{
-	"CRITICAL": LogLevelCritical,
-	"ERROR":    LogLevelError,
-	"WARN":     LogLevelWarn,
-	"INFO":     LogLevelInfo,
-	"DEBUG":    LogLevelDebug,
+var levelName = map[int]string{
+	Critical: "CRITICAL",
+	Error:    "ERROR",
+	Warn:     "WARN",
+	Info:     "INFO",
+	Debug:    "DEBUG",
+	Verbose:  "VERBOSE",
 }
 
 type Logger interface {
 	SetLevel(level int)
-	Printf(level int, format string, v ...interface{})
-	Flush()
+	Verbosef(format string, v ...interface{})
+	Debugf(format string, v ...interface{})
+	Infof(format string, v ...interface{})
+	Warnf(format string, v ...interface{})
+	Errorf(format string, v ...interface{})
+	Criticalf(format string, v ...interface{})
 }
 
-type bufLogger struct {
+type Config struct {
+	Out io.Writer
+	Level int
+	Prefix string
+	Flag int
+}
+
+type myLogger struct {
 	level  int
 	logger *log.Logger
-	buf    *bufio.Writer
-	mu     sync.Mutex
 }
 
-var _ Logger = (*bufLogger)(nil)
+var _ Logger = (*myLogger)(nil)
 
-func NewLogger(out io.Writer, level int, prefix string, flg int) Logger {
-	buf := bufio.NewWriter(out)
-	return &bufLogger{
-		level:  level,
-		buf:    buf,
-		logger: log.New(buf, prefix, flg),
+func NewLogger(config *Config) Logger {
+	return &myLogger{
+		level:  config.Level,
+		logger: log.New(config.Out, config.Prefix, config.Flag),
 	}
 }
 
-func GetLogLevelByName(name string) int {
-	level, ok := logNameLevel[strings.ToUpper(name)]
+func LevelToName(level int) string {
+	name, ok := levelName[level]
 	if ok {
-		return level
+		return name
 	}
-	return LogLevelNo
+	return ""
 }
 
-func (l *bufLogger) SetLevel(level int) {
+func (l *myLogger) SetLevel(level int) {
 	l.level = level
 }
 
-func (l *bufLogger) Printf(level int, format string, v ...interface{}) {
+func (l *myLogger) Verbosef(format string, v ...interface{}) {
+	l.Printf(Verbose, format, v...)
+}
+
+func (l *myLogger) Debugf(format string, v ...interface{}) {
+	l.Printf(Debug, format, v...)
+}
+
+func (l *myLogger) Infof(format string, v ...interface{}) {
+	l.Printf(Info, format, v...)
+}
+
+func (l *myLogger) Warnf(format string, v ...interface{}) {
+	l.Printf(Warn, format, v...)
+}
+
+func (l *myLogger) Errorf(format string, v ...interface{}) {
+	l.Printf(Error, format, v...)
+}
+
+func (l *myLogger) Criticalf(format string, v ...interface{}) {
+	l.Printf(Critical, format, v...)
+}
+
+func (l *myLogger) Printf(level int, format string, v ...interface{}) {
 	if level > l.level {
 		return
 	}
-	name, ok := logLevelName[level]
-	if ok {
+	name := LevelToName(level)
+	if name != "" {
 		format = fmt.Sprintf("[%s] %s", name, format)
-		l.mu.Lock()
-		defer l.mu.Unlock()
 		l.logger.Printf(format, v...)
 	}
-}
-
-func (l *bufLogger) Flush() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.buf.Flush()
 }
