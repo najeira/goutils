@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
+	"strings"
 )
 
 const (
@@ -45,10 +47,10 @@ type Logger interface {
 }
 
 type Config struct {
-	Out io.Writer
-	Level int
+	Out    io.Writer
+	Level  int
 	Prefix string
-	Flag int
+	Flag   int
 }
 
 type myLogger struct {
@@ -59,9 +61,22 @@ type myLogger struct {
 var _ Logger = (*myLogger)(nil)
 
 func NewLogger(config *Config) Logger {
+	var out io.Writer = nil
+	var level int = Info
+	var prefix string = ""
+	var flag int = 0
+	if config != nil {
+		out = config.Out
+		level = config.Level
+		prefix = config.Prefix
+		flag = config.Flag
+	}
+	if out == nil {
+		out = os.Stdout
+	}
 	return &myLogger{
-		level:  config.Level,
-		logger: log.New(config.Out, config.Prefix, config.Flag),
+		level:  level,
+		logger: log.New(out, prefix, flag),
 	}
 }
 
@@ -71,6 +86,16 @@ func LevelToName(level int) string {
 		return name
 	}
 	return ""
+}
+
+func NameToLevel(name string) int {
+	name = strings.ToUpper(name)
+	for level, value := range levelName {
+		if name == value {
+			return level
+		}
+	}
+	return No
 }
 
 func (l *myLogger) SetLevel(level int) {
