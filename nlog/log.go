@@ -13,6 +13,7 @@ const (
 	Critical
 	Error
 	Warn
+	Notice
 	Info
 	Debug
 	Verbose
@@ -31,6 +32,7 @@ var levelName = map[int]string{
 	Critical: "CRITICAL",
 	Error:    "ERROR",
 	Warn:     "WARN",
+	Notice:   "NOTICE",
 	Info:     "INFO",
 	Debug:    "DEBUG",
 	Verbose:  "VERBOSE",
@@ -41,6 +43,7 @@ type Logger interface {
 	Verbosef(format string, v ...interface{})
 	Debugf(format string, v ...interface{})
 	Infof(format string, v ...interface{})
+	Noticef(format string, v ...interface{})
 	Warnf(format string, v ...interface{})
 	Errorf(format string, v ...interface{})
 	Criticalf(format string, v ...interface{})
@@ -112,6 +115,10 @@ func (l *myLogger) Debugf(format string, v ...interface{}) {
 
 func (l *myLogger) Infof(format string, v ...interface{}) {
 	l.Printf(Info, format, v...)
+}
+
+func (l *myLogger) Noticef(format string, v ...interface{}) {
+	l.Printf(Notice, format, v...)
 }
 
 func (l *myLogger) Warnf(format string, v ...interface{}) {
