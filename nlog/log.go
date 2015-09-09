@@ -41,6 +41,7 @@ var levelName = map[int]string{
 type Logger interface {
 	SetLevel(level int)
 	SetLevelName(level string)
+	Enable(level int) bool
 	Verbosef(format string, v ...interface{})
 	Debugf(format string, v ...interface{})
 	Infof(format string, v ...interface{})
@@ -108,6 +109,10 @@ func (l *myLogger) SetLevel(level int) {
 
 func (l *myLogger) SetLevelName(level string) {
 	l.level = NameToLevel(level)
+}
+
+func (l *myLogger) Enable(level int) bool {
+	return level <= l.level && level != No
 }
 
 func (l *myLogger) Verbosef(format string, v ...interface{}) {
