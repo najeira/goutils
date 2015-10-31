@@ -1,4 +1,4 @@
-package varconv
+package varutil
 
 import (
 	"database/sql"
