@@ -1,7 +1,7 @@
 package maputil
 
 import (
-	vc "github.com/najeira/goutils/varconv"
+	vc "github.com/najeira/goutils/varutil"
 )
 
 func String(m map[string]interface{}, key string) (string, bool) {
