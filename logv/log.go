@@ -4,8 +4,16 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
-	"sync/atomic"
+)
+
+const (
+	No = iota
+	Fatal
+	Err
+	Warn
+	Info
+	Debug
+	Trace
 )
 
 type Logger interface {
@@ -19,8 +27,7 @@ type Logger interface {
 
 type logger struct {
 	logger *log.Logger
-	level  int32
-	mu     sync.RWMutex
+	level  int
 }
 
 var (
@@ -58,49 +65,37 @@ func Printf(format string, v ...interface{}) {
 
 func NewLogger() Logger {
 	return &logger{
-		logger: log.New(os.Stdout, "", 0),
-		level:  0,
+		logger: log.New(os.Stdout, "", log.LstdFlags),
+		level:  Warn,
 	}
 }
 
 func (l *logger) SetOutput(out io.Writer) {
-	l.mu.Lock()
-	l.logger = log.New(out, "", 0)
-	l.mu.Unlock()
+	l.logger = log.New(out, "", log.LstdFlags)
 }
 
 func (l *logger) SetLevel(level int) {
-	atomic.StoreInt32(&l.level, int32(level))
+	l.level = level
 }
 
 func (l *logger) V(level int) bool {
-	return int32(level) <= atomic.LoadInt32(&l.level)
-}
-
-func (l *logger) getLogger() *log.Logger {
-	l.mu.RLock()
-	lgr := l.logger
-	l.mu.RUnlock()
-	return lgr
+	return level <= l.level && level > No
 }
 
 func (l *logger) Print(v ...interface{}) {
-	lgr := l.getLogger()
-	if lgr != nil {
-		lgr.Print(v)
+	if l.logger != nil {
+		l.logger.Print(v)
 	}
 }
 
 func (l *logger) Println(v ...interface{}) {
-	lgr := l.getLogger()
-	if lgr != nil {
-		lgr.Println(v)
+	if l.logger != nil {
+		l.logger.Println(v)
 	}
 }
 
 func (l *logger) Printf(format string, v ...interface{}) {
-	lgr := l.getLogger()
-	if lgr != nil {
-		lgr.Printf(format, v...)
+	if l.logger != nil {
+		l.logger.Printf(format, v...)
 	}
 }
