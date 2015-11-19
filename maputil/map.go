@@ -1,7 +1,7 @@
 package maputil
 
 import (
-	vc "github.com/najeira/goutils/varutil"
+	vu "github.com/najeira/goutils/varutil"
 )
 
 func String(m map[string]interface{}, key string) (string, bool) {
@@ -9,7 +9,7 @@ func String(m map[string]interface{}, key string) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	return vc.String(v)
+	return vu.String(v)
 }
 
 func Int(m map[string]interface{}, key string) (int64, bool) {
@@ -17,7 +17,7 @@ func Int(m map[string]interface{}, key string) (int64, bool) {
 	if !ok {
 		return 0, false
 	}
-	return vc.Int(v)
+	return vu.Int(v)
 }
 
 func Float(m map[string]interface{}, key string) (float64, bool) {
@@ -25,7 +25,7 @@ func Float(m map[string]interface{}, key string) (float64, bool) {
 	if !ok {
 		return 0, false
 	}
-	return vc.Float(v)
+	return vu.Float(v)
 }
 
 func Bool(m map[string]interface{}, key string) (bool, bool) {
@@ -33,5 +33,5 @@ func Bool(m map[string]interface{}, key string) (bool, bool) {
 	if !ok {
 		return false, false
 	}
-	return vc.Bool(v)
+	return vu.Bool(v)
 }
