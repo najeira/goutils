@@ -12,6 +12,10 @@ type MeticsTimers struct {
 	mu     sync.RWMutex
 }
 
+func NewMeticsTimers() *MeticsTimers {
+	return &MeticsTimers{timers: make(map[string]mt.Timer)}
+}
+
 func (m *MeticsTimers) Measure(elapsed time.Duration, key string) {
 	m.mu.RLock()
 	t, ok := m.timers[key]
@@ -130,8 +134,6 @@ type MetricsHttp struct {
 	status3xx      mt.Meter
 	status4xx      mt.Meter
 	status5xx      mt.Meter
-	statusErr      mt.Meter
-	timers         *MeticsTimers
 }
 
 func NewMetricsHttp() *MetricsHttp {
@@ -143,13 +145,7 @@ func NewMetricsHttp() *MetricsHttp {
 		status3xx:      mt.NewMeter(),
 		status4xx:      mt.NewMeter(),
 		status5xx:      mt.NewMeter(),
-		statusErr:      mt.NewMeter(),
-		timers:         &MeticsTimers{timers: make(map[string]mt.Timer)},
 	}
-}
-
-func (m *MetricsHttp) Timers() *MeticsTimers {
-	return m.timers
 }
 
 func (m *MetricsHttp) IncClient() {
@@ -158,6 +154,10 @@ func (m *MetricsHttp) IncClient() {
 
 func (m *MetricsHttp) DecClient() {
 	m.clientsCounter.Dec(1)
+}
+
+func (m *MetricsHttp) UpdateClients() {
+	m.clients.Update(m.clientsCounter.Count())
 }
 
 func (m *MetricsHttp) Mark2xx() {
@@ -176,17 +176,11 @@ func (m *MetricsHttp) Mark5xx() {
 	m.status5xx.Mark(1)
 }
 
-func (m *MetricsHttp) MarkErr() {
-	m.statusErr.Mark(1)
-}
-
-func (m *MetricsHttp) Measure(elapsed time.Duration, uri string) {
+func (m *MetricsHttp) Measure(elapsed time.Duration) {
 	m.requests.Update(elapsed)
-	m.timers.Measure(elapsed, uri)
 }
 
 func (m *MetricsHttp) Get() map[string]float64 {
-	m.clients.Update(m.clientsCounter.Count())
 	return map[string]float64{
 		"clients_min":    float64(m.clients.Min()),
 		"clients_max":    float64(m.clients.Max()),
@@ -208,7 +202,5 @@ func (m *MetricsHttp) Get() map[string]float64 {
 		"4xx_rate":       m.status4xx.Rate1(),
 		"5xx_count":      float64(m.status5xx.Count()),
 		"5xx_rate":       m.status5xx.Rate1(),
-		"err_count":      float64(m.statusErr.Count()),
-		"err_rate":       m.statusErr.Rate1(),
 	}
 }
